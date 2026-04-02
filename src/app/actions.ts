@@ -2,7 +2,7 @@
 
 import { generateAnswerFromFAQ } from '@/ai/flows/generate-answer-from-faq';
 import { shouldFallbackToSupport } from '@/ai/flows/fallback-to-support';
-import { faqContentString } from '@/lib/faq';
+import { faqContentString, getLocalFaqMatchAnswer } from '@/lib/faq';
 import { chatConfig } from '@/lib/config';
 import type { ChatMessage, Feedback } from '@/lib/types';
 
@@ -56,10 +56,13 @@ export async function handleUserMessage(
     };
   } catch (error) {
     console.error('Error handling user message:', error);
+    const local = getLocalFaqMatchAnswer(userMessage.content);
     return {
       id: Date.now().toString(),
       role: 'bot',
-      content: 'Something went wrong, please try again.',
+      content: local.answer,
+      sources: local.sources,
+      feedback: null,
       timestamp: Date.now(),
     };
   }

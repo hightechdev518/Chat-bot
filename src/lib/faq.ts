@@ -38,3 +38,47 @@ export const faqContent: FAQ[] = [
 ];
 
 export const faqContentString = faqContent.map(item => `Q: ${item.question}\nA: ${item.answer}\nSource: ${item.source}`).join('\n\n');
+
+/**
+ * Offline / fallback answer when the AI flow is unavailable (e.g. missing API key).
+ * Scores FAQ entries by simple word overlap with the user message.
+ */
+export function getLocalFaqMatchAnswer(userMessage: string): {
+  answer: string;
+  sources: string[];
+} {
+  const words = userMessage
+    .toLowerCase()
+    .split(/\W+/)
+    .filter((w) => w.length > 2);
+
+  if (words.length === 0) {
+    return {
+      answer:
+        "Thanks for your message. I can help with pricing, installation, security, and more—try asking about a specific topic from our FAQ.",
+      sources: [],
+    };
+  }
+
+  let bestScore = 0;
+  let best: FAQ | null = null;
+
+  for (const item of faqContent) {
+    const hay = `${item.question} ${item.answer}`.toLowerCase();
+    const score = words.reduce((s, w) => s + (hay.includes(w) ? 1 : 0), 0);
+    if (score > bestScore) {
+      bestScore = score;
+      best = item;
+    }
+  }
+
+  if (best && bestScore > 0) {
+    return { answer: best.answer, sources: [best.source] };
+  }
+
+  return {
+    answer:
+      "I couldn’t find a close match in the FAQ for that. Please try rephrasing, or contact support for more help.",
+    sources: [],
+  };
+}
